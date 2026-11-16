@@ -7,14 +7,12 @@ import { In, Repository } from 'typeorm';
 
 import { CommonRecordVisibilityService } from 'src/engine/api/common/common-record-visibility/common-record-visibility.service';
 import { type RecordVisibilityRestrictionHandler } from 'src/engine/api/common/common-record-visibility/types/record-visibility-restriction-handler.type';
-import { isApplicationAuthContext } from 'src/engine/core-modules/auth/guards/is-application-auth-context.guard';
-import { isUserAuthContext } from 'src/engine/core-modules/auth/guards/is-user-auth-context.guard';
 import { type WorkspaceAuthContext } from 'src/engine/core-modules/auth/types/workspace-auth-context.type';
-import { type ConnectedAccountEntity } from 'src/engine/metadata-modules/connected-account/entities/connected-account.entity';
 import { MessageChannelEntity } from 'src/engine/metadata-modules/message-channel/entities/message-channel.entity';
 import { WorkspaceOrmManager } from 'src/engine/twenty-orm/workspace-orm.manager';
 import { buildSystemAuthContext } from 'src/engine/twenty-orm/utils/build-system-auth-context.util';
 import { type MessageChannelMessageAssociationWorkspaceEntity } from 'src/modules/messaging/common/standard-objects/message-channel-message-association.workspace-entity';
+import { isConnectedAccountOwnedByViewer } from 'src/modules/messaging/common/utils/is-connected-account-owned-by-viewer.util';
 
 @Injectable()
 export class ApplyMessageChannelMessageAssociationsVisibilityRestrictionsService
@@ -109,7 +107,7 @@ export class ApplyMessageChannelMessageAssociationsVisibilityRestrictionsService
     const ownedMessageChannelIds = new Set(
       messageChannels
         .filter((messageChannel) =>
-          this.isConnectedAccountOwnedByViewer({
+          isConnectedAccountOwnedByViewer({
             connectedAccount: messageChannel.connectedAccount,
             authContext,
           }),
@@ -124,26 +122,5 @@ export class ApplyMessageChannelMessageAssociationsVisibilityRestrictionsService
         )
         .map(({ id }) => id),
     );
-  }
-
-  private isConnectedAccountOwnedByViewer({
-    connectedAccount,
-    authContext,
-  }: {
-    connectedAccount: Pick<
-      ConnectedAccountEntity,
-      'userWorkspaceId' | 'applicationId'
-    >;
-    authContext: WorkspaceAuthContext;
-  }): boolean {
-    if (isUserAuthContext(authContext)) {
-      return connectedAccount.userWorkspaceId === authContext.userWorkspaceId;
-    }
-
-    if (isApplicationAuthContext(authContext)) {
-      return connectedAccount.applicationId === authContext.application.id;
-    }
-
-    return false;
   }
 }
