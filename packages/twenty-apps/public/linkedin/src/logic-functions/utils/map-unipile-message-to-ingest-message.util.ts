@@ -65,7 +65,7 @@ export const mapUnipileMessageToIngestMessage = ({
       counterparts,
     }),
     ...(isDefined(isChatRead)
-      ? { isRead: message.is_sender || isChatRead }
+      ? { isRead: Boolean(message.is_sender) || isChatRead }
       : {}),
   };
 };
