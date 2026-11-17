@@ -23,7 +23,20 @@ describe('destroyConnectionsReleasedMidQuery', () => {
 
     release();
 
+    expect(releaseConnection).toHaveBeenCalledTimes(1);
     expect(releaseConnection).toHaveBeenCalledWith(undefined);
+  });
+
+  it('should pass the release error through for an idle connection', async () => {
+    const { release, releaseConnection } = await obtainReleaseCallback({
+      activeQuery: null,
+    });
+    const connectionError = new Error('Connection terminated unexpectedly');
+
+    release(connectionError);
+
+    expect(releaseConnection).toHaveBeenCalledTimes(1);
+    expect(releaseConnection).toHaveBeenCalledWith(connectionError);
   });
 
   it('should destroy a connection released while its query is still running', async () => {
@@ -33,6 +46,7 @@ describe('destroyConnectionsReleasedMidQuery', () => {
 
     release();
 
+    expect(releaseConnection).toHaveBeenCalledTimes(1);
     expect(releaseConnection).toHaveBeenCalledWith(expect.any(Error));
   });
 });
