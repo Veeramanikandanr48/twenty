@@ -5,21 +5,35 @@ import { isDefined } from 'twenty-shared/utils';
 
 const logger = new Logger('destroyConnectionsReleasedMidQuery');
 
-type ReleaseConnection = (error?: Error) => void;
+const hasActiveQueryField = (connection: object): boolean =>
+  '_activeQuery' in connection || 'activeQuery' in connection;
 
-const hasQueryInFlight = (connection: object): boolean =>
-  'activeQuery' in connection && isDefined(connection.activeQuery);
+const hasQueryInFlight = (connection: object): boolean => {
+  if ('_activeQuery' in connection) {
+    return isDefined(connection._activeQuery);
+  }
+
+  return 'activeQuery' in connection && isDefined(connection.activeQuery);
+};
 
 export const destroyConnectionsReleasedMidQuery = (
   driver: Pick<PostgresDriver, 'obtainMasterConnection'>,
 ): void => {
   const obtainMasterConnection = driver.obtainMasterConnection.bind(driver);
+  let isMissingActiveQueryFieldLogged = false;
 
   driver.obtainMasterConnection = async () => {
-    const [connection, releaseConnection] =
-      (await obtainMasterConnection()) as [object, ReleaseConnection];
+    const [connection, releaseConnection] = await obtainMasterConnection();
 
-    const releaseOrDestroyConnection: ReleaseConnection = (error) => {
+    if (!isMissingActiveQueryFieldLogged && !hasActiveQueryField(connection)) {
+      isMissingActiveQueryFieldLogged = true;
+
+      logger.warn(
+        'pg client exposes no active query field, connections released mid-query go back to the pool',
+      );
+    }
+
+    const releaseOrDestroyConnection = (error?: Error) => {
       if (isDefined(error) || !hasQueryInFlight(connection)) {
         releaseConnection(error);
 

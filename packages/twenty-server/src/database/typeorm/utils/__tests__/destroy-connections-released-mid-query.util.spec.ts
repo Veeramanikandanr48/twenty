@@ -16,16 +16,18 @@ const obtainReleaseCallback = async (connection: object) => {
 };
 
 describe('destroyConnectionsReleasedMidQuery', () => {
-  it('should release an idle connection back to the pool', async () => {
-    const { release, releaseConnection } = await obtainReleaseCallback({
-      activeQuery: null,
-    });
+  it.each([{ activeQuery: null }, { _activeQuery: null }])(
+    'should release an idle connection back to the pool (%o)',
+    async (connection) => {
+      const { release, releaseConnection } =
+        await obtainReleaseCallback(connection);
 
-    release();
+      release();
 
-    expect(releaseConnection).toHaveBeenCalledTimes(1);
-    expect(releaseConnection).toHaveBeenCalledWith(undefined);
-  });
+      expect(releaseConnection).toHaveBeenCalledTimes(1);
+      expect(releaseConnection).toHaveBeenCalledWith(undefined);
+    },
+  );
 
   it('should pass the release error through for an idle connection', async () => {
     const { release, releaseConnection } = await obtainReleaseCallback({
@@ -39,14 +41,19 @@ describe('destroyConnectionsReleasedMidQuery', () => {
     expect(releaseConnection).toHaveBeenCalledWith(connectionError);
   });
 
-  it('should destroy a connection released while its query is still running', async () => {
-    const { release, releaseConnection } = await obtainReleaseCallback({
-      activeQuery: { text: 'DELETE FROM "core"."fieldMetadata"' },
-    });
+  it.each([
+    { activeQuery: { text: 'DELETE FROM "core"."fieldMetadata"' } },
+    { _activeQuery: { text: 'DELETE FROM "core"."fieldMetadata"' } },
+  ])(
+    'should destroy a connection released while its query is still running (%o)',
+    async (connection) => {
+      const { release, releaseConnection } =
+        await obtainReleaseCallback(connection);
 
-    release();
+      release();
 
-    expect(releaseConnection).toHaveBeenCalledTimes(1);
-    expect(releaseConnection).toHaveBeenCalledWith(expect.any(Error));
-  });
+      expect(releaseConnection).toHaveBeenCalledTimes(1);
+      expect(releaseConnection).toHaveBeenCalledWith(expect.any(Error));
+    },
+  );
 });
