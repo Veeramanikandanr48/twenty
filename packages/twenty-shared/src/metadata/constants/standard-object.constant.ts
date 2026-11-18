@@ -1079,6 +1079,9 @@ export const STANDARD_OBJECTS = {
       assigneeIdIndex: {
         universalIdentifier: 'f48fa3b1-0cec-44da-a9e5-f8a5e766637e',
       },
+      livePositionIndex: {
+        universalIdentifier: 'ef3ed01f-d44d-497d-a10a-fa0355632bc3',
+      },
       searchVectorGinIndex: {
         universalIdentifier: 'a86b32b3-01d3-4302-a152-8b7f247db7b4',
       },
